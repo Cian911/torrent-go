@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -50,6 +53,25 @@ func TestMain(t *testing.T) {
 		json, err := decodeBencode(str)
 		if err == nil {
 			t.Errorf("Expected error but got value: %v", json)
+		}
+	})
+
+	t.Run("Decode list", func(t *testing.T) {
+		str := "l5:helloi52ei34ee"
+		str2 := "i52ei34ei-90ee"
+		want := "[\"hello\",52,34]"
+
+		json, err := decodeBencode(str)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if json != want {
+			r, _ := regexp.Compile(`-?\d+`)
+			for _, v := range strings.Split(str2, "i") {
+				fmt.Println(r.FindString(v))
+			}
+			t.Errorf("Expected %s but got value: %v", want, json)
 		}
 	})
 }

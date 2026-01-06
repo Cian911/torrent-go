@@ -4,83 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"unicode"
 )
 
-// Ensures gofmt doesn't remove the "os" encoding/json import (feel free to remove this!)
 var _ = json.Marshal
 
-type EncodingType string
-
-var encodingTypes = [4]EncodingType{
-	"string",
-	"int",
-	"list",
-	"directionary",
-}
-
-type Encoding struct {
-	typ    EncodingType
-	value  string
-	length int
-	sign   bool
-}
-
-// Example:
-// - 5:hello -> hello
-// - 10:hello12345 -> hello12345
-// - i42e -> 42
-// - i-42e -> -42
-func decodeBencode(bencodedString string) (interface{}, error) {
-	if unicode.IsDigit(rune(bencodedString[0])) {
-		var firstColonIndex int
-
-		for i := 0; i < len(bencodedString); i++ {
-			if bencodedString[i] == ':' {
-				firstColonIndex = i
-				break
-			}
-		}
-
-		lengthStr := bencodedString[:firstColonIndex]
-
-		length, err := strconv.Atoi(lengthStr)
-		if err != nil {
-			return "", err
-		}
-
-		return bencodedString[firstColonIndex+1 : firstColonIndex+1+length], nil
-	} else if bencodedString[0] == 'i' && bencodedString[len(bencodedString)-1] == 'e' {
-		startIndex := 1
-		sign := false
-
-		if bencodedString[1] == '-' {
-			sign = true
-		}
-
-		// Check for leading zero value
-		if bencodedString[startIndex+1:startIndex+2] == "0" {
-			return "", fmt.Errorf("Leading zero value found.")
-		}
-
-		encoder := Encoding{
-			typ:    "int",
-			value:  bencodedString[startIndex : len(bencodedString)-1],
-			length: len(bencodedString) - 1,
-			sign:   sign,
-		}
-
-		// Convert to int
-		iVal, err := strconv.Atoi(encoder.value)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse string value: %v", err)
-		}
-
-		return iVal, nil
-	} else {
-		return "", fmt.Errorf("Only strings are supported at the moment")
+func decodeBencode(bencodedString string) (any, error) {
+	v, next, err := decodeAt(bencodedString, 0)
+	if err != nil {
+		return nil, err
 	}
+	if next != len(bencodedString) {
+		return nil, fmt.Errorf("trailing data after index %d", next)
+	}
+	return v, nil
 }
 
 func main() {
@@ -105,3 +41,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+
